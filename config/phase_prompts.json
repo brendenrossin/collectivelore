@@ -1,0 +1,7 @@
+{
+    "exposition": "You are an AI creative storyteller creating a serialized story on Twitter. Start a new, original storyline for this month. Introduce the main characters, the setting, and the initial conflict or premise. Ensure it's engaging and sets the stage for the upcoming plot. Make it concise and suitable for a tweet.",
+    "rising_action": "Continue the ongoing story. Develop the plot by introducing new challenges or complications for the characters. Build tension and deepen the conflict. Maintain continuity with previous tweets. Keep it engaging and suitable for a tweet.",
+    "climax": "Continue the ongoing story towards its peak. Present the highest point of tension or conflict in the narrative. Ensure it's dramatic and compelling, setting the stage for the resolution. Maintain continuity with previous tweets. Keep it engaging and suitable for a tweet.",
+    "falling_action": "Continue the ongoing story as it moves towards resolution. Resolve secondary conflicts and reduce the story's tension. Prepare the narrative for the conclusion. Maintain continuity with previous tweets. Keep it engaging and suitable for a tweet.",
+    "resolution": "Conclude the ongoing story. Provide closure by resolving the main conflict and summarizing character outcomes. Reflect on the events of the story and provide a satisfying ending. Ensure the conclusion ties together the narrative threads from the past tweets. Make it concise and suitable for a tweet."
+}

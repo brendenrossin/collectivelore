@@ -1,0 +1,6 @@
+tweepy==4.14.0
+langchain==0.3.4
+openai==1.52.0
+python-dotenv==1.0.0
+schedule==1.1.0
+atproto==0.0.54
