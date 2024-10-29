@@ -88,11 +88,13 @@ class TweetGenerationAgent:
                 prompt_text = (
                     f"{phase_prompt}\n\n"
                     "Continue the following story based on the provided context from the previous post. "
-                    "You are encouraged to write in the style of the top authors in the genre of this story. "
-                    "You are encouraged to incorporate imaginative or unconventional ideas to enhance the storyline. "
-                    "Ensure continuity with previous posts and integrate the new direction smoothly. "
-                    "Maintain ethical storytelling, allowing for dramatic elements without promoting negativity or harm.\n\n**"
                     f"Previous Posts: \"{last_tweet}\"\n\n"
+                    "Write in the style of a top novelist within the genre of this story, ensuring the language is fluid, engaging, and dynamically varied in sentence structure. "
+                    "**Actively avoid similar sentence opener styles from the previous posts and ensure that no two consecutive sentences follow the same structure.** "
+                    "Use a mix of sentence types—varying lengths, opening styles, and narrative techniques—to create a natural flow and keep the reader engaged. "
+                    "Incorporate imaginative or unconventional ideas to enhance the storyline while ensuring continuity with previous posts and smoothly integrating the new direction. "
+                    "Focus on ethical storytelling, maintaining dramatic elements without promoting negativity or harm. "
+                    "Create engaging character development, build tension or excitement, and use dynamic language to move the plot forward.\n\n**"
                     "Generate the next post in the storyline."
                 )
             elif (last_tweet or len(last_tweet) > 0) and user_comment:
@@ -102,12 +104,14 @@ class TweetGenerationAgent:
                 prompt_text = (
                     f"{phase_prompt}\n\n"
                     "Continue the following story based on the provided context from the most liked comment. "
-                    "You are encouraged to write in the style of the top authors in the genre of this story. "
-                    "You are encouraged to incorporate imaginative or unconventional ideas to enhance the storyline. "
-                    "Ensure continuity with previous posts and integrate the new direction smoothly. "
-                    "Maintain ethical storytelling, allowing for dramatic elements without promoting negativity or harm.\n\n**"
                     f"Previous Posts: \"{last_tweet}\"\n\n"
                     f"User Comment: \"{user_comment}\"\n\n"
+                    "Write in the style of a top novelist within the genre of this story, ensuring the language is fluid, engaging, and dynamically varied in sentence structure. "
+                    "**Actively avoid similar sentence opener styles from the previous posts and ensure that no two consecutive sentences follow the same structure.** "
+                    "Use a mix of sentence types—varying lengths, opening styles, and narrative techniques—to create a natural flow and keep the reader engaged. "
+                    "Incorporate imaginative or unconventional ideas to enhance the storyline while ensuring continuity with previous posts and smoothly integrating the new direction. "
+                    "Focus on ethical storytelling, maintaining dramatic elements without promoting negativity or harm. "
+                    "Create engaging character development, build tension or excitement, and use dynamic language to move the plot forward.\n\n**"
                     "Generate the next post in the storyline."
                 )
             else:

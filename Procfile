@@ -1,0 +1,1 @@
+worker: python bluesky_main.py
