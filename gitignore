@@ -1,0 +1,11 @@
+# Ignore .env file
+.env
+
+# Ignore app_ids.txt
+app_ids.txt
+
+# Ignore log folder
+logs/
+
+__pycache__/
+*.pyc

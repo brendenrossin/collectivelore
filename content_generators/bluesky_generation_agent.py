@@ -99,6 +99,7 @@ class TweetGenerationAgent:
                 else:
                     emphasis_instructions = (
                                 "1. **Advance** the story by introducing new developments or escalating tension based on the previous posts.\n"
+                                "2. **Build upon the most recent section of the story, ensuring a cohesive continuation.**\n"
                                 )
             else:
                 context = ""
