@@ -8,10 +8,10 @@ class StoryPhaseManager:
         # Define the proportion of the month each phase should occupy
         self.phase_percentages = {
             "exposition": 0.2,      # 20% of the month
-            "rising_action": 0.6,   # 60% of the month
-            "climax": 0.13,         # 13% of the month
-            "falling_action": 0.07, # 7% of the month
-            "resolution": 0.0       # Last day(s)
+            "rising_action": 0.5,   # 50% of the month
+            "climax": 0.15,         # 15% of the month
+            "falling_action": 0.10, # 10% of the month
+            "resolution": 0.05      # Last 5% of the month
         }
 
     def get_current_phase(self):

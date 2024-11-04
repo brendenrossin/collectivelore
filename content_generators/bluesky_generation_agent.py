@@ -18,7 +18,7 @@ import logging
 class TweetGenerationAgent:
     def __init__(self, openai_api_key, config_path='config/phase_prompts.json'):
         # Initialize the OpenAI LLM
-        self.llm = OpenAI(api_key=openai_api_key, max_tokens=60)
+        self.llm = OpenAI(api_key=openai_api_key, max_tokens=60, temperature=0.5, frequency_penalty=0.5, presence_penalty=0.5)
         
         # Initialize other components
         self.phase_manager = StoryPhaseManager()
@@ -59,6 +59,21 @@ class TweetGenerationAgent:
 
         # If no complete sentence is found, return the original text (safeguard)
         return output.strip() if output else text.strip()
+    
+    def evaluate_output(self, output, user_feedback):
+        issues = []
+        if user_feedback:
+            if not user_comment_included(output, user_feedback):
+                issues.append("- The draft does not adequately incorporate the user comment.")
+        # Common checks for all scenarios
+        if not advances_plot(output):
+            issues.append("- The draft does not effectively advance the plot.")
+        if not maintains_tone(output):
+            issues.append("- The draft does not maintain the consistent tone and style.")
+        if repeats_content(output):
+            issues.append("- The draft repeats content unnecessarily.")
+        return "\n".join(issues) if issues else None
+
 
     def generate_tweet(self, last_tweet=None, user_comment=None):
         # print('generate tweet with last tweet:', last_tweet, 'and user comment:', user_comment)
@@ -69,50 +84,93 @@ class TweetGenerationAgent:
             # print('generate tweet last tweet empty')
             temp_phase = "exposition"
             prompt_text = self.prompt_loader.get_prompt(temp_phase)
-        elif phase == "resolution":
-            # print('generate tweet resolution')
-            summary = generate_story_summary()
-            prompt_text = (
-                f"{self.prompt_loader.get_prompt(phase)}\n\n"
-                f"Summary: {summary}"
-            )
         elif phase == "exposition" and not last_tweet:
             # print('generate tweet exposition and not last tweet')
             prompt_text = self.prompt_loader.get_prompt(phase)
         else:
+            if (last_tweet or len(last_tweet) > 0):
+                context = f"Previous Posts: \"{last_tweet}\"\n\n"
+                if user_comment:
+                    context += f"User Comment: \"{user_comment}\"\n\n"
+                    emphasis_instructions = (
+                                "1. **Focus** on the user comment, making it the central element of the next part of the story.\n"
+                                "2. **Integrate** elements from previous posts to maintain continuity.\n"
+                                )
+                else:
+                    emphasis_instructions = (
+                                "1. **Advance** the story by introducing new developments or escalating tension based on the previous posts.\n"
+                                )
+            else:
+                context = ""
             # print('generate tweet else')
             if (last_tweet or len(last_tweet) > 0) and not user_comment:
-                # print('generate tweet last tweet and not user comment')
                 # **Enhancement:** Include the phase prompt when previous posts are present
                 phase_prompt = self.prompt_loader.get_prompt(phase)
                 prompt_text = (
-                    f"{phase_prompt}\n\n"
-                    "Continue the following story based on the provided context from the previous post. "
-                    f"Previous Posts: \"{last_tweet}\"\n\n"
-                    "Write in the style of a top novelist within the genre of this story, ensuring the language is fluid, engaging, and dynamically varied in sentence structure. "
-                    "**Actively avoid similar sentence opener styles from the previous posts and ensure that no two consecutive sentences follow the same structure.** "
-                    "Use a mix of sentence types—varying lengths, opening styles, and narrative techniques—to create a natural flow and keep the reader engaged. "
-                    "Incorporate imaginative or unconventional ideas to enhance the storyline while ensuring continuity with previous posts and smoothly integrating the new direction. "
-                    "Focus on ethical storytelling, maintaining dramatic elements without promoting negativity or harm. "
-                    "Create engaging character development, build tension or excitement, and use dynamic language to move the plot forward.\n\n**"
-                    "Generate the next post in the storyline."
+                    "Continue the following story based on the context below. "
+                    f"{context}"
+                    "Write the next part of the story in the style of a top short story author in this genre. "
+                    f"**{phase_prompt}**\n\n"
+                    "Instructions:\n"
+                    f"{emphasis_instructions}"
+                    "3. **Maintain** continuity with previous posts, incorporating necessary elements to keep the story cohesive.\n"
+                    "4. **Advance** the plot meaningfully, introducing new developments.\n"
+                    "5. **Keep** the tone, style, and pacing consistent with the story so far.\n"
+                    "6. **Do not** include the instructions or any meta-commentary in your output.\n"
+                    "7. **Provide only** the next part of the story.\n\n"
+                    "Now, generate the next post in the storyline."
+                    
+                    # "Ensure language is fluid, engaging, and varied in sentence structure, avoiding repetitive openings or phrasing. "
+                    # "Each post should clearly advance the plot to add new details, escalate tension, or introduce fresh elements to keep the story dynamic and avoid stalling. "
+                    # "**Do not repeat any sentences or phrases verbatim from previous posts** unless they serve a specific narrative purpose, such as emphasizing an important detail. "
+                    # "Keep the pacing brisk to fit a short story format of around 9,000 characters total, making each post concise yet impactful. "
+                    # "Blend imaginative ideas smoothly with prior events for continuity. "
+                    # "Follow the prompt below as the primary guide for the story’s direction, tone, and pacing. This should strongly influence each scene and ensure progression toward the story's goals:\n\n"
+                    # "Write in the style of a top short story author within the genre of this story, ensuring the language is fluid, engaging, and dynamically varied in sentence structure. "
+                    # "**Do not repeat any sentences or phrases verbatim from previous posts** unless they serve a specific narrative purpose, such as emphasizing an important detail. "
+                    # "Ensure the story advances in a way that builds upon past events while introducing new elements or developments. "
+                    # "Use varied sentence structures and openers to maintain freshness and keep the reader engaged. "
+                    # "Remember that this is a short story with a total length of around 9,000 characters by the end; space the story elements accordingly, making each post concise yet impactful. "
+                    # "Move the plot forward decisively, revealing new details, advancing the storyline, or escalating tension to prevent the narrative from stalling. "
+                    # "Keep the pacing brisk to fit the daily format while allowing room for character depth and story-building elements. "
+                    # "Incorporate imaginative or unconventional ideas to enhance the storyline while ensuring continuity with previous posts and smoothly integrating the new direction. "
+                    # "Create engaging character development, build tension or excitement, and use dynamic language to move the plot forward.\n\n**"
+                    # "Generate the next post in the storyline."
                 )
             elif (last_tweet or len(last_tweet) > 0) and user_comment:
                 # print('generate tweet last tweet and user comment')
                 # **Enhancement:** Include the phase prompt when user comments are present
                 phase_prompt = self.prompt_loader.get_prompt(phase)
                 prompt_text = (
-                    f"{phase_prompt}\n\n"
-                    "Continue the following story based on the provided context from the most liked comment. "
-                    f"Previous Posts: \"{last_tweet}\"\n\n"
-                    f"User Comment: \"{user_comment}\"\n\n"
-                    "Write in the style of a top novelist within the genre of this story, ensuring the language is fluid, engaging, and dynamically varied in sentence structure. "
-                    "**Actively avoid similar sentence opener styles from the previous posts and ensure that no two consecutive sentences follow the same structure.** "
-                    "Use a mix of sentence types—varying lengths, opening styles, and narrative techniques—to create a natural flow and keep the reader engaged. "
-                    "Incorporate imaginative or unconventional ideas to enhance the storyline while ensuring continuity with previous posts and smoothly integrating the new direction. "
-                    "Focus on ethical storytelling, maintaining dramatic elements without promoting negativity or harm. "
-                    "Create engaging character development, build tension or excitement, and use dynamic language to move the plot forward.\n\n**"
-                    "Generate the next post in the storyline."
+                    "Continue the following story based on the context below. "
+                    f"{context}"
+                    "Write the next part of the story in the style of a top short story author in this genre. "
+                    f"**{phase_prompt}**\n\n"
+                    "Instructions:\n"
+                    f"{emphasis_instructions}"
+                    "3. **Maintain** continuity with previous posts, incorporating necessary elements to keep the story cohesive.\n"
+                    "4. **Advance** the plot meaningfully, introducing new developments.\n"
+                    "5. **Keep** the tone, style, and pacing consistent with the story so far.\n"
+                    "6. **Do not** include the instructions or any meta-commentary in your output.\n"
+                    "7. **Provide only** the next part of the story.\n\n"
+                    "Now, generate the next post in the storyline."
+                    
+                    # "Ensure language is fluid, engaging, and varied in sentence structure, avoiding repetitive openings or phrasing. "
+                    # "Each post should clearly advance the plot to add new details, escalate tension, or introduce fresh elements to keep the story dynamic and avoid stalling. "
+                    # "**Do not repeat any sentences or phrases verbatim from previous posts** unless they serve a specific narrative purpose, such as emphasizing an important detail. "
+                    # "Keep the pacing brisk to fit a short story format of around 9,000 characters total, making each post concise yet impactful. "
+                    # "Blend imaginative ideas smoothly with prior events for continuity. "
+                    # "Follow the prompt below as the primary guide for the story’s direction, tone, and pacing. This should strongly influence each scene and ensure progression toward the story's goals:\n\n"
+                    # "Write in the style of a top short story author within the genre of this story, ensuring the language is fluid, engaging, and dynamically varied in sentence structure. "
+                    # "**Do not repeat any sentences or phrases verbatim from previous posts** unless they serve a specific narrative purpose, such as emphasizing an important detail. "
+                    # "Ensure the story advances in a way that builds upon past events while introducing new elements or developments. "
+                    # "Use varied sentence structures and openers to maintain freshness and keep the reader engaged. "
+                    # "Remember that this is a short story with a total length of around 9,000 characters by the end; space the story elements accordingly, making each post concise yet impactful. "
+                    # "Move the plot forward decisively, revealing new details, advancing the storyline, or escalating tension to prevent the narrative from stalling. "
+                    # "Keep the pacing brisk to fit the daily format while allowing room for character depth and story-building elements. "
+                    # "Incorporate imaginative or unconventional ideas to enhance the storyline while ensuring continuity with previous posts and smoothly integrating the new direction. "
+                    # "Create engaging character development, build tension or excitement, and use dynamic language to move the plot forward.\n\n**"
+                    # "Generate the next post in the storyline."
                 )
             else:
                 # Autonomous continuation based on current phase

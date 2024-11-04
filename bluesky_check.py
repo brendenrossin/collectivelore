@@ -1,4 +1,4 @@
-# main.py
+# check.py
 
 import os
 import schedule
@@ -118,6 +118,8 @@ def job():
     year = today.year
     total_days = calendar.monthrange(year, month)[1]
 
+    print(f"Today is day {day} of the month out of {total_days} days. Phase: {phase}")
+
     tweets_to_post = []
 
     if phase == "exposition" and day == 1:
@@ -133,15 +135,6 @@ def job():
         # Generate the first story tweet
         first_story_tweet = tweet_agent.generate_tweet(last_tweet=None, user_comment=None)
         tweets_to_post.append(first_story_tweet)
-    elif phase == "resolution" and day == total_days:
-        # Generate and post the final tweet of the month with summary
-        summary = generate_story_summary()
-        resolution_tweet = (
-            f"And so concludes the story of {summary}. 🏁✨ "
-            f"Thank you all for your incredible contributions and engagement throughout the month. "
-            f"Stay tuned for next month's adventure! 📚🚀 #StoryConclusion"
-        )
-        tweets_to_post.append(resolution_tweet)
     else:
         # Continue the storyline based on engagement and phase
         recent_posts, last_post_id = tweet_agent.fetch_recent_posts()
@@ -160,7 +153,7 @@ def job():
                 f"Welcome to a new month of our interactive story! 📖✨ "
                 f"This month's tale is yet unwritten, and it's up to you to shape its journey. "
                 f"For the next {days_remaining} days, your comments will help determine the plot twists and turns. "
-                f"Let's embark on this adventure together! 🚀 #InteractiveStory"
+                f"Let's embark on this adventure together! 🚀 #CollectiveLore"
             )
             tweets_to_post.append(intro_tweet)
             next_post = tweet_agent.generate_tweet(last_tweet=None, user_comment=None)
@@ -179,6 +172,14 @@ def job():
                     tweets_to_post.append(next_post)
             except Exception as e:
                 print(f"Error fetching comments: {e}")
+
+    if phase == "resolution" and day == total_days:
+        resolution_tweet = (
+            f"And so concludes our story for {month}. 🏁✨ "
+            f"Thank you all for your incredible contributions and engagement throughout the month. "
+            f"Stay tuned for next month's adventure! 📚🚀 #CollectiveLore"
+        )
+        tweets_to_post.append(resolution_tweet)
 
     print('printing tweets to post')
     print(tweets_to_post)

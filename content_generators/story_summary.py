@@ -2,7 +2,7 @@
 
 import csv
 
-def generate_story_summary(log_file='logs/tweet_logs.csv'):
+def generate_story_summary(all_posts):
     try:
         with open(log_file, 'r', encoding='utf-8') as file:
             reader = csv.reader(file)
