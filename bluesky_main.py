@@ -17,9 +17,14 @@ import logging
 # Load environment variables
 load_dotenv()
 
+# Ensure the logs directory exists
+log_dir = 'logs'
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+
 # Configure logging
 logging.basicConfig(
-    filename='logs/error.log',
+    filename=os.path.join(log_dir, 'error.log'),
     level=logging.ERROR,
     format='%(asctime)s:%(levelname)s:%(message)s'
 )
@@ -36,18 +41,17 @@ REWARD_THRESHOLD = 10  # Example threshold
 def log_tweet(timestamp, post_uri, tweet, likes, retweets, comments, reward):
     try:
         # Ensure the logs directory exists
-        os.makedirs('logs', exist_ok=True)
+        os.makedirs(log_dir, exist_ok=True)
         # Check if the CSV file exists; if not, write headers
-        file_exists = os.path.isfile('logs/tweet_logs.csv')
-        with open('logs/tweet_logs.csv', mode='a', newline='', encoding='utf-8') as file:
+        file_exists = os.path.isfile(os.path.join(log_dir, 'tweet_logs.csv'))
+        with open(os.path.join(log_dir, 'tweet_logs.csv'), mode='a', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             if not file_exists:
                 writer.writerow(['Timestamp', 'URI', 'Tweet', 'Likes', 'Retweets', 'Comments', 'Reward'])
-            writer.writerow([timestamp, post_uri, tweet, likes, retweets, comments, reward])
-        print(f"Logged post: {tweet[:50]}... with Reward: {reward}")
+        # Log the tweet data
+        writer.writerow([timestamp, post_uri, tweet, likes, retweets, comments, reward])
     except Exception as e:
-        logging.error(f"Error logging post: {e}")
-        print(f"Error logging post: {e}")
+        logging.error(f"Failed to log tweet: {e}")
 
 def update_top_examples(tweet, reward):
     if reward >= REWARD_THRESHOLD:
