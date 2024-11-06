@@ -16,6 +16,13 @@ import logging
 
 # Load environment variables
 load_dotenv()
+try:
+    print(f"OPENAI_API_KEY: {os.get_env("OPENAI_API_KEY")}")
+    print(f"langchain_api_key: {os.get_env("langchain_api_key")}")
+    print(f"Bluesky Handle: {os.get_env("BLUESKY_HANDLE")}")
+    print(f"Bluesky password: {os.get_env("BLUESKY_PASSWORD")}")
+except Exception as e:
+    print(f"Error loading environment variables: {e}")
 
 # Ensure the logs directory exists
 log_dir = 'logs'
