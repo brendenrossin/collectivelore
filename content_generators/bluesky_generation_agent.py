@@ -277,18 +277,13 @@ class TweetGenerationAgent:
                 print(f"Error fetching recent posts last try: {e}")
 
             if recent_posts:
-                print(f'recent posts: {recent_posts}')
                 # Find the index of the first occurrence of a string that starts with "Welcome to a new month"
                 first_index = next((i for i in range(len(recent_posts)) if recent_posts[i].startswith("Welcome to a new month")), -1)
 
-                print('last index updated:', first_index)
-                print('total posts:', len(recent_posts))
                 # Use everything in recent_posts after that index
                 if first_index != 0:
                     recent_posts = recent_posts[:first_index]
                     relevant_post_uris = post_uris[:first_index]
-
-                print(f'recent posts after last index: {recent_posts}')
                 
                 # Reverse the order of recent_posts to get the in order of when sent
                 recent_posts.reverse()
