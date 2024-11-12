@@ -18,7 +18,7 @@ import logging
 class TweetGenerationAgent:
     def __init__(self, openai_api_key, config_path='config/phase_prompts.json'):
         # Initialize the OpenAI LLM
-        self.llm = OpenAI(api_key=openai_api_key, max_tokens=60, temperature=0.5, frequency_penalty=0.5, presence_penalty=0.5)
+        self.llm = OpenAI(api_key=openai_api_key, max_tokens=60, temperature=0.9, frequency_penalty=0.5, presence_penalty=0.5)
         
         # Initialize other components
         self.phase_manager = StoryPhaseManager()
