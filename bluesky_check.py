@@ -137,11 +137,10 @@ async def job():
         tweets_to_post.append(intro_tweet)
         
         # Generate the first story tweet
-        first_story_tweet = tweet_agent.generate_tweet(last_tweet=None, user_comment=None)
-        first_story_competing_tweet = await tweet_agent.generate_competing_tweets(last_tweet=None,
+        # first_story_tweet = tweet_agent.generate_tweet(last_tweet=None, user_comment=None)
+        first_story_tweet = await tweet_agent.generate_competing_tweets(last_tweet=None,
                                                                                   user_comment=None)
         tweets_to_post.append(first_story_tweet)
-        tweets_to_post.append(first_story_competing_tweet)
     else:
         # Continue the storyline based on engagement and phase
         recent_posts, last_post_id = tweet_agent.fetch_recent_posts()
@@ -163,11 +162,10 @@ async def job():
                 f"Let's embark on this adventure together! 🚀 #CollectiveLore"
             )
             tweets_to_post.append(intro_tweet)
-            next_post = tweet_agent.generate_tweet(last_tweet=None, user_comment=None)
-            next_post_competing_tweet = await tweet_agent.generate_competing_tweets(last_tweet=None,
-                                                                                    user_comment=None)
+            # next_post = tweet_agent.generate_tweet(last_tweet=None, user_comment=None)
+            next_post = await tweet_agent.generate_competing_tweets(last_tweet=None,
+                                                                    user_comment=None)
             tweets_to_post.append(next_post)
-            tweets_to_post.append(next_post_competing_tweet)
         else:
             try:
                 # Fetch comments on the last post
@@ -175,17 +173,15 @@ async def job():
                 # Select the most valid comment
                 valid_comment = select_valid_comment(comments)
                 if valid_comment:
-                    next_post = tweet_agent.generate_tweet(last_tweet=all_posts, user_comment=valid_comment)
-                    next_post_competing_tweet = await tweet_agent.generate_competing_tweets(last_tweet=all_posts,
-                                                                                        user_comment=valid_comment) 
+                    # next_post = tweet_agent.generate_tweet(last_tweet=all_posts, user_comment=valid_comment)
+                    next_post = await tweet_agent.generate_competing_tweets(last_tweet=all_posts,
+                                                                            user_comment=valid_comment) 
                     tweets_to_post.append(next_post)
-                    tweets_to_post.append(next_post_competing_tweet)
                 else:
-                    next_post = tweet_agent.generate_tweet(last_tweet=all_posts, user_comment=None)
-                    next_post_competing_tweet = await tweet_agent.generate_competing_tweets(last_tweet=all_posts,
-                                                                                        user_comment=None)  
+                    # next_post = tweet_agent.generate_tweet(last_tweet=all_posts, user_comment=None)
+                    next_post = await tweet_agent.generate_competing_tweets(last_tweet=all_posts,
+                                                                            user_comment=None)  
                     tweets_to_post.append(next_post)
-                    tweets_to_post.append(next_post_competing_tweet)
             except Exception as e:
                 print(f"Error fetching comments: {e}")
 
