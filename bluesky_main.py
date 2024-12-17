@@ -1,6 +1,7 @@
 # main.py
 
 import os
+import asyncio
 import schedule
 import time
 import csv
@@ -17,10 +18,10 @@ import logging
 # Load environment variables
 load_dotenv()
 try:
-    print(f"OPENAI_API_KEY: {os.getenv("OPENAI_API_KEY")}")
-    print(f"langchain_api_key: {os.getenv("langchain_api_key")}")
-    print(f"Bluesky Handle: {os.getenv("BLUESKY_HANDLE")}")
-    print(f"Bluesky password: {os.getenv("BLUESKY_PASSWORD")}")
+    logging.info(f"OPENAI_API_KEY: {os.getenv('OPENAI_API_KEY')}")
+    logging.info(f"langchain_api_key: {os.getenv('langchain_api_key')}")
+    logging.info(f"Bluesky Handle: {os.getenv('BLUESKY_HANDLE')}")
+    logging.info(f"Bluesky password: {os.getenv('BLUESKY_PASSWORD')}")
 except Exception as e:
     print(f"Error loading environment variables: {e}")
 
@@ -38,7 +39,8 @@ logging.basicConfig(
 
 # Initialize Agents
 openai_api_key = os.getenv("OPENAI_API_KEY")
-tweet_agent = TweetGenerationAgent(openai_api_key)
+anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+tweet_agent = TweetGenerationAgent(openai_api_key, anthropic_api_key)
 comment_agent = CommentAnalysisAgent(openai_api_key)
 phase_manager = StoryPhaseManager()
 
@@ -73,15 +75,16 @@ def update_top_examples(tweet, reward):
 
 def is_content_safe(tweet):
     safety_prompt = (
-        f"Is the following post appropriate for a general audience and free from offensive or controversial content? "
+        f"Is the following post appropriate for an adult audience and free from offensive or controversial content? "
         f"Respond with 'Yes' or 'No'.\n\nPost: \"{tweet}\""
     )
     try:
-        response = tweet_agent.llm(prompt=safety_prompt, max_tokens=3, temperature=0)
-        return response.strip().lower() == "yes"
+        # For ChatOpenAI, we need to pass a messages list
+        messages = [{"role": "user", "content": safety_prompt}]
+        response = tweet_agent.reviewer.invoke(messages)
+        return "yes" in response.content.lower()
     except Exception as e:
         logging.error(f"Error checking content safety: {e}")
-        print(f"Error checking content safety: {e}")
         return False
 
 def analyze_comment(comment):
@@ -95,11 +98,6 @@ def select_valid_comment(comments):
     
     # Iterate through the sorted comments until a valid one is found
     for comment in sorted_comments:
-        # print(
-        #     f"Comment: {comment['text']}, "
-        #     f"Likes: {comment['likes']}, "
-        #     f"Retweets: {comment['retweets']}"
-        # )
         if analyze_comment(comment['text']):
             return comment['text']
     
@@ -118,10 +116,9 @@ def fetch_metrics(post_uri):
         return likes, retweets, comments
     except AtProtocolError as e:
         logging.error(f"Error fetching metrics for post {post_uri}: {e}")
-        print(f"Error fetching metrics for post {post_uri}: {e}")
         return 0, 0, []
 
-def job():
+async def job():
     today = datetime.now()
     phase = phase_manager.get_current_phase()
     day = today.day
@@ -129,7 +126,7 @@ def job():
     year = today.year
     total_days = calendar.monthrange(year, month)[1]
 
-    print(f"Today is day {day} of the month out of {total_days} days. Phase: {phase}")
+    logging.info(f"Today is day {day} of the month out of {total_days} days. Phase: {phase}")
 
     tweets_to_post = []
 
@@ -144,7 +141,9 @@ def job():
         tweets_to_post.append(intro_tweet)
         
         # Generate the first story tweet
-        first_story_tweet = tweet_agent.generate_tweet(last_tweet=None, user_comment=None)
+        # first_story_tweet = tweet_agent.generate_tweet(last_tweet=None, user_comment=None)
+        first_story_tweet = await tweet_agent.generate_competing_tweets(last_tweet=None,
+                                                                        user_comment=None)
         tweets_to_post.append(first_story_tweet)
     else:
         # Continue the storyline based on engagement and phase
@@ -167,7 +166,9 @@ def job():
                 f"Let's embark on this adventure together! 🚀 #CollectiveLore"
             )
             tweets_to_post.append(intro_tweet)
-            next_post = tweet_agent.generate_tweet(last_tweet=None, user_comment=None)
+            # next_post = tweet_agent.generate_tweet(last_tweet=None, user_comment=None)
+            next_post = await tweet_agent.generate_competing_tweets(last_tweet=None,
+                                                                    user_comment=None)
             tweets_to_post.append(next_post)
         else:
             try:
@@ -176,13 +177,17 @@ def job():
                 # Select the most valid comment
                 valid_comment = select_valid_comment(comments)
                 if valid_comment:
-                    next_post = tweet_agent.generate_tweet(last_tweet=all_posts, user_comment=valid_comment)
+                    # next_post = tweet_agent.generate_tweet(last_tweet=all_posts, user_comment=valid_comment)
+                    next_post = await tweet_agent.generate_competing_tweets(last_tweet=all_posts,
+                                                                            user_comment=valid_comment)
                     tweets_to_post.append(next_post)
                 else:
-                    next_post = tweet_agent.generate_tweet(last_tweet=all_posts, user_comment=None)
+                    # next_post = tweet_agent.generate_tweet(last_tweet=all_posts, user_comment=None)
+                    next_post = await tweet_agent.generate_competing_tweets(last_tweet=all_posts,
+                                                                            user_comment=None)
                     tweets_to_post.append(next_post)
             except Exception as e:
-                print(f"Error fetching comments: {e}")
+                logging.error(f"Error fetching comments: {e}")
 
     if phase == "resolution" and day == total_days:
         resolution_tweet = (
@@ -199,7 +204,7 @@ def job():
         # Ensure the post is safe
         safe = is_content_safe(post)
         if not safe:
-            print("Generated post failed content safety check. Skipping.")
+            logging.info("Generated post failed content safety check. Skipping.")
             continue
 
         # Post the tweet and collect metrics
@@ -221,13 +226,4 @@ def job():
         # update_top_examples(post, reward)
 
 if __name__ == "__main__":
-    job()  # Run the job immediately
-
-# Schedule the job every day at 09:00 AM
-# schedule.every().day.at("11:40").do(job)
-
-# print("Storyline bot is running and will post daily posts at 10:00 AM.")
-
-# while True:
-#     schedule.run_pending()
-#     time.sleep(60)  # Wait one minute
+    asyncio.run(job())  # Run the job immediately

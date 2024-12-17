@@ -1,6 +1,7 @@
 # check.py
 
 import os
+import asyncio
 import schedule
 import time
 import csv
@@ -26,7 +27,8 @@ logging.basicConfig(
 
 # Initialize Agents
 openai_api_key = os.getenv("OPENAI_API_KEY")
-tweet_agent = TweetGenerationAgent(openai_api_key)
+anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+tweet_agent = TweetGenerationAgent(openai_api_key, anthropic_api_key)
 comment_agent = CommentAnalysisAgent(openai_api_key)
 phase_manager = StoryPhaseManager()
 
@@ -66,8 +68,10 @@ def is_content_safe(tweet):
         f"Respond with 'Yes' or 'No'.\n\nPost: \"{tweet}\""
     )
     try:
-        response = tweet_agent.llm(prompt=safety_prompt, max_tokens=3, temperature=0)
-        return response.strip().lower() == "yes"
+        # For ChatOpenAI, we need to pass a messages list
+        messages = [{"role": "user", "content": safety_prompt}]
+        response = tweet_agent.reviewer.invoke(messages)
+        return "yes" in response.content.lower()
     except Exception as e:
         logging.error(f"Error checking content safety: {e}")
         print(f"Error checking content safety: {e}")
@@ -110,7 +114,7 @@ def fetch_metrics(post_uri):
         print(f"Error fetching metrics for post {post_uri}: {e}")
         return 0, 0, []
 
-def job():
+async def job():
     today = datetime.now()
     phase = phase_manager.get_current_phase()
     day = today.day
@@ -134,7 +138,10 @@ def job():
         
         # Generate the first story tweet
         first_story_tweet = tweet_agent.generate_tweet(last_tweet=None, user_comment=None)
+        first_story_competing_tweet = await tweet_agent.generate_competing_tweets(last_tweet=None,
+                                                                                  user_comment=None)
         tweets_to_post.append(first_story_tweet)
+        tweets_to_post.append(first_story_competing_tweet)
     else:
         # Continue the storyline based on engagement and phase
         recent_posts, last_post_id = tweet_agent.fetch_recent_posts()
@@ -157,7 +164,10 @@ def job():
             )
             tweets_to_post.append(intro_tweet)
             next_post = tweet_agent.generate_tweet(last_tweet=None, user_comment=None)
+            next_post_competing_tweet = await tweet_agent.generate_competing_tweets(last_tweet=None,
+                                                                                    user_comment=None)
             tweets_to_post.append(next_post)
+            tweets_to_post.append(next_post_competing_tweet)
         else:
             try:
                 # Fetch comments on the last post
@@ -166,10 +176,16 @@ def job():
                 valid_comment = select_valid_comment(comments)
                 if valid_comment:
                     next_post = tweet_agent.generate_tweet(last_tweet=all_posts, user_comment=valid_comment)
+                    next_post_competing_tweet = await tweet_agent.generate_competing_tweets(last_tweet=all_posts,
+                                                                                        user_comment=valid_comment) 
                     tweets_to_post.append(next_post)
+                    tweets_to_post.append(next_post_competing_tweet)
                 else:
                     next_post = tweet_agent.generate_tweet(last_tweet=all_posts, user_comment=None)
+                    next_post_competing_tweet = await tweet_agent.generate_competing_tweets(last_tweet=all_posts,
+                                                                                        user_comment=None)  
                     tweets_to_post.append(next_post)
+                    tweets_to_post.append(next_post_competing_tweet)
             except Exception as e:
                 print(f"Error fetching comments: {e}")
 
@@ -210,7 +226,7 @@ def job():
         # update_top_examples(post, reward)
 
 if __name__ == "__main__":
-    job()  # Run the job immediately
+    asyncio.run(job())  # Run the job immediately
 
 # Schedule the job every day at 09:00 AM
 # schedule.every().day.at("11:40").do(job)
